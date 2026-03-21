@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Xiaomi MiMo TTS",
+        "description": "Uses the Xiaomi mimo-v2-tts model. Supports Chinese and English. You may set a default style below. If not set, or if you prepend a style tag to the message in each tts.say call, the per-call style takes precedence.",
+        "data": {
+          "api_key": "API key",
+          "url": "URL (default is fine)",
+          "style": "Default style (optional)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Xiaomi MiMo TTS",
+        "description": "Update API key, URL, and default style.",
+        "data": {
+          "api_key": "API key",
+          "url": "URL (default is fine)",
+          "style": "Default style (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Authentication failed (401) — check API key and Authorization header",
+      "bad_request": "Bad request (400) — check request format, parameters, and model name",
+      "forbidden": "Access denied (403) — region not supported or API key blocked by risk control",
+      "content_filtered": "Content blocked (421) — content moderation rejected the input",
+      "rate_limited": "Rate limit exceeded (429) — too many requests, try again later",
+      "server_error": "Server error (500/503) — MiMo service failure, retry later",
+      "cannot_connect": "Network error — cannot reach the MiMo API (see logs for details)",
+      "unknown": "Unexpected error (see logs)"
+    },
+    "abort": {
+      "reconfigure_successful": "Settings updated"
+    }
+  },
+  "entity": {
+    "mimo_tts": {
+      "name": "Xiaomi MiMo TTS"
+    }
+  }
+}

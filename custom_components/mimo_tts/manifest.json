@@ -1,0 +1,12 @@
+{
+  "domain": "mimo_tts",
+  "name": "Xiaomi MiMo TTS",
+  "codeowners": ["@manymuch"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/manymuch/mimo_tts",
+  "issue_tracker": "https://github.com/manymuch/mimo_tts/issues",
+  "iot_class": "cloud_polling",
+  "requirements": ["aiohttp>=3.9.0"],
+  "version": "1.0.0"
+}

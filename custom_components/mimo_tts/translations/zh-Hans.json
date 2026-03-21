@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "小米 MiMo TTS",
+        "description": "使用小米mimo-v2-tts模型。支持中文和英文。可在下方设置默认风格。若不设置，或每次tts.say时在消息前添加style标签，则覆盖默认风格，以每次tts.say中的风格为准。",
+        "data": {
+          "api_key": "API 密钥",
+          "url": "URL 默认不用改",
+          "style": "默认风格（可选）"
+        }
+      },
+      "reconfigure": {
+        "title": "重新配置小米 MiMo TTS",
+        "description": "更新 API 密钥、URL 与默认风格。",
+        "data": {
+          "api_key": "API 密钥",
+          "url": "URL 默认不用改",
+          "style": "默认风格（可选）"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "认证失败 (401) — 请检查 API 密钥及 Authorization 请求头格式",
+      "bad_request": "请求格式错误 (400) — 请检查 JSON 格式、必需参数及模型名称",
+      "forbidden": "拒绝访问 (403) — 当前地区暂不支持，或 API 密钥被风控拦截",
+      "content_filtered": "内容被拦截 (421) — 内容审核未通过，请避免输入不安全或敏感内容",
+      "rate_limited": "请求超限 (429) — 请求过于频繁，请稍后重试",
+      "server_error": "服务器错误 (500/503) — MiMo 服务故障，请稍后重试",
+      "cannot_connect": "网络错误 — 无法连接 MiMo API（请在日志中查看详情）",
+      "unknown": "未知错误（详见日志）"
+    },
+    "abort": {
+      "reconfigure_successful": "设置已更新"
+    }
+  },
+  "entity": {
+    "mimo_tts": {
+      "name": "小米 MiMo TTS"
+    }
+  }
+}
