@@ -7,7 +7,7 @@
 
 ## 安装
 ### 手动安装
-将release压缩包解压后的`mimo_tts`文件夹复制到 HA 的 `custom_components/`内），重启HA，再在界面中搜索`mimo_tts`添加集成。  
+下载[Release](https://github.com/manymuch/mimo_tts/releases)中最新的压缩包，解压后的`mimo_tts`文件夹复制到 HA 的 `custom_components/`内），重启HA，再在界面中搜索`mimo_tts`添加集成。  
 ### HACS安装
 1. 安装 [HACS](https://hacs.xyz/)（如果尚未安装）
 2. 在 HACS 选项卡中，点击右上角三个点，选择 `Custom repositories`
