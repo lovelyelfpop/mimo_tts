@@ -15,11 +15,14 @@ from homeassistant.exceptions import HomeAssistantError
 from .const import (
     CONF_API_KEY,
     CONF_URL,
-    CONF_STYLE,
+    DEFAULT_AUDIO_TAG_CONTROL,
     DEFAULT_CHAT_COMPLETIONS_URL,
     DEFAULT_MODEL,
+    DEFAULT_NATURAL_LANGUAGE_CONTROL,
     DOMAIN,
-    VOICE_EN,
+    LANG_EN_MIA,
+    apply_audio_tag_control,
+    voice_for_language,
 )
 from .exceptions import (
     MimoAPIError,
@@ -70,7 +73,6 @@ def _entry_data_schema(defaults: dict[str, Any]) -> vol.Schema:
         {
             vol.Required(CONF_API_KEY, default=defaults.get(CONF_API_KEY, "")): str,
             vol.Optional(CONF_URL, default=url_default): str,
-            vol.Optional(CONF_STYLE, default=defaults.get(CONF_STYLE, "")): str,
         }
     )
 
@@ -89,8 +91,9 @@ async def _validate_speech(data: dict[str, Any]) -> None:
         async with aiohttp.ClientSession() as session:
             await client.async_synthesize(
                 session,
-                "Hi",
-                voice=VOICE_EN,
+                apply_audio_tag_control("Hi", DEFAULT_AUDIO_TAG_CONTROL),
+                voice=voice_for_language(LANG_EN_MIA),
+                instruction=DEFAULT_NATURAL_LANGUAGE_CONTROL,
             )
     except MimoAuthError as err:
         _LOGGER.error("MiMo TTS setup: authentication failed — %s", err)
@@ -153,11 +156,9 @@ class MimoTTSConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("MiMo TTS setup: unexpected error during validation")
                 errors["base"] = "unknown"
             else:
-                style = (user_input.get(CONF_STYLE) or "").strip()
                 uid_src = (
                     f"{user_input[CONF_API_KEY]}:"
-                    f"{user_input.get(CONF_URL, DEFAULT_CHAT_COMPLETIONS_URL)}:"
-                    f"{style}"
+                    f"{user_input.get(CONF_URL, DEFAULT_CHAT_COMPLETIONS_URL)}"
                 )
                 uid = hashlib.sha256(uid_src.encode()).hexdigest()[:16]
                 await self.async_set_unique_id(f"mimo_tts_{uid}")
@@ -168,11 +169,9 @@ class MimoTTSConfigFlow(ConfigFlow, domain=DOMAIN):
                         user_input.get(CONF_URL) or ""
                     ).strip()
                     or DEFAULT_CHAT_COMPLETIONS_URL,
-                    CONF_STYLE: style,
                 }
-                title = f"{DEFAULT_MODEL}-{style}" if style else DEFAULT_MODEL
                 return self.async_create_entry(
-                    title=title,
+                    title=DEFAULT_MODEL,
                     data=clean,
                 )
 
@@ -216,7 +215,6 @@ class MimoTTSConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_API_KEY: merged[CONF_API_KEY],
                     CONF_URL: (merged.get(CONF_URL) or "").strip()
                     or DEFAULT_CHAT_COMPLETIONS_URL,
-                    CONF_STYLE: (merged.get(CONF_STYLE) or "").strip(),
                 }
                 self.hass.config_entries.async_update_entry(entry, data=clean)
                 return self.async_abort(reason="reconfigure_successful")

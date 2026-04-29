@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from pathlib import Path
 from typing import Any
 
@@ -18,13 +17,20 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_API_KEY,
     CONF_URL,
-    CONF_STYLE,
+    CONF_AUDIO_TAG_CONTROL,
+    CONF_NATURAL_LANGUAGE_CONTROL,
+    DEFAULT_AUDIO_TAG_CONTROL,
     DEFAULT_CHAT_COMPLETIONS_URL,
     DEFAULT_MODEL,
+    DEFAULT_NATURAL_LANGUAGE_CONTROL,
     DEVICE_CONFIGURATION_URL,
     DEVICE_MODEL,
     DOMAIN,
     MANUFACTURER,
+    OPTION_AUDIO_TAG_CONTROL,
+    OPTION_NATURAL_LANGUAGE_CONTROL,
+    SUPPORTED_LANGUAGES,
+    apply_audio_tag_control,
     voice_for_language,
 )
 from .exceptions import (
@@ -37,23 +43,8 @@ from .mimo_client import MimoTTSClient
 
 _LOGGER = logging.getLogger(__name__)
 
-_STYLE_TAG_RE = re.compile(r"<style>.*?</style>", re.DOTALL)
-
-# Only English and Chinese; voice is derived via voice_for_language().
-SUPPORTED_LANGUAGES = ["en", "zh"]
-
-
 def _get_url(data: dict[str, Any]) -> str:
     return (data.get(CONF_URL) or "").strip() or DEFAULT_CHAT_COMPLETIONS_URL
-
-
-def _apply_default_style(message: str, default_style: str) -> str:
-    """Prepend <style> tag unless the message already contains one."""
-    if not default_style:
-        return message
-    if _STYLE_TAG_RE.search(message):
-        return message
-    return f"<style>{default_style}</style>{message}"
 
 
 def _integration_sw_version() -> str:
@@ -82,17 +73,21 @@ class MimoTTSEntity(TextToSpeechEntity):
     _attr_has_entity_name = False
     _attr_should_poll = False
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry, sw_version: str) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        sw_version: str,
+    ) -> None:
         self.hass = hass
         self._entry = config_entry
         self._attr_unique_id = config_entry.unique_id
 
-        style = (config_entry.data.get(CONF_STYLE) or "").strip()
-        self._attr_name = f"{DEFAULT_MODEL}-{style}" if style else DEFAULT_MODEL
+        self._attr_name = DEFAULT_MODEL
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, config_entry.entry_id)},
-            "name": f"{DEFAULT_MODEL}-{style}" if style else DEFAULT_MODEL,
+            "name": DEFAULT_MODEL,
             "manufacturer": MANUFACTURER,
             "model": DEVICE_MODEL,
             "configuration_url": DEVICE_CONFIGURATION_URL,
@@ -108,22 +103,45 @@ class MimoTTSEntity(TextToSpeechEntity):
 
     @property
     def default_language(self) -> str:
-        return "en"
+        return SUPPORTED_LANGUAGES[0]
 
     @property
     def supported_languages(self) -> list[str]:
         return SUPPORTED_LANGUAGES
 
     @property
+    def supported_options(self) -> list[str]:
+        return [OPTION_NATURAL_LANGUAGE_CONTROL, OPTION_AUDIO_TAG_CONTROL]
+
+    @property
+    def default_options(self) -> dict[str, str]:
+        return {
+            OPTION_NATURAL_LANGUAGE_CONTROL: self._get_natural_language_control(),
+            OPTION_AUDIO_TAG_CONTROL: self._get_audio_tag_control(),
+        }
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        style = (self._entry.data.get(CONF_STYLE) or "").strip()
-        return {"style": style} if style else {}
+        return {
+            "natural_language_control": self._get_natural_language_control(),
+            "audio_tag_control": self._get_audio_tag_control(),
+        }
+
+    def _get_natural_language_control(self) -> str:
+        return (
+            self._entry.data.get(CONF_NATURAL_LANGUAGE_CONTROL)
+            or DEFAULT_NATURAL_LANGUAGE_CONTROL
+        ).strip()
+
+    def _get_audio_tag_control(self) -> str:
+        return (
+            self._entry.data.get(CONF_AUDIO_TAG_CONTROL) or DEFAULT_AUDIO_TAG_CONTROL
+        ).strip()
 
     async def async_config_entry_updated(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Refresh when the user reconfigures."""
         self._entry = entry
-        style = (entry.data.get(CONF_STYLE) or "").strip()
-        self._attr_name = f"{DEFAULT_MODEL}-{style}" if style else DEFAULT_MODEL
+        self._attr_name = DEFAULT_MODEL
         self.async_write_ha_state()
 
     async def async_get_tts_audio(
@@ -131,8 +149,15 @@ class MimoTTSEntity(TextToSpeechEntity):
     ) -> tuple[str | None, bytes | None]:
         """Return WAV audio bytes; voice follows HA language (zh vs en)."""
         voice = voice_for_language(language)
-        default_style = (self._entry.data.get(CONF_STYLE) or "").strip()
-        message = _apply_default_style(message, default_style)
+        options = options or {}
+        natural_language_control = str(
+            options.get(OPTION_NATURAL_LANGUAGE_CONTROL)
+            or self._get_natural_language_control()
+        ).strip()
+        audio_tag_control = str(
+            options.get(OPTION_AUDIO_TAG_CONTROL) or self._get_audio_tag_control()
+        ).strip()
+        message = apply_audio_tag_control(message, audio_tag_control)
 
         client = self._client()
         try:
@@ -141,6 +166,7 @@ class MimoTTSEntity(TextToSpeechEntity):
                     session,
                     message,
                     voice=voice,
+                    instruction=natural_language_control or None,
                 )
         except MimoAuthError as err:
             _LOGGER.error("MiMo TTS auth error — check API key: %s", err)

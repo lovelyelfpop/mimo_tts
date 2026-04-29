@@ -1,9 +1,9 @@
 # Xiaomi MiMo TTS for Home Assistant
 
-[中文说明](README.md)
+[Chinese README](README.md)
 
-Home Assistant integration for **MiMo-V2-TTS** text-to-speech.  
-Official docs: [platform.xiaomimimo.com](https://platform.xiaomimimo.com/).
+Home Assistant integration for **MiMo-V2.5-TTS** built-in voice text-to-speech.  
+Official docs: [MiMo-V2.5-TTS speech synthesis](https://platform.xiaomimimo.com/docs/zh-CN/usage-guide/speech-synthesis-v2.5).
 
 ## Installation
 ### Manual install
@@ -23,31 +23,50 @@ Copy the `mimo_tts` folder from the release archive into HA's `custom_components
 |--------|-------------|
 | **API key** | Token from the [Xiaomi API platform](https://platform.xiaomimimo.com/#/console/api-keys) (required). |
 | **URL** | Default (no change needed): `https://api.xiaomimimo.com/v1/chat/completions` |
-| **Default style** | Optional. A style string automatically prepended as `<style>…</style>` to every TTS request. If a message already contains its own `<style>` tag, the default is ignored and the inline style takes precedence. |
+| **Controls** | After setup, edit the Natural Language Control and Audio Tag Control text entities on the integration device. Natural Language Control defaults to a bright, bouncy good-news delivery; Audio Tag Control defaults to Taiwanese accent. |
 
 
-## Style control
+## Speech Control
 
-### Overall style control
+### Natural Language Control
 
-Use `<style>` in `tts.say` to set one or more styles. See the [official Xiaomi docs](https://platform.xiaomimimo.com/#/docs/news/v2-tts-release) for details.
+Natural Language Control is sent as the MiMo v2.5 `user` message. Use it to describe the overall speaking style in natural language, such as tone, speed, emotion, and role state. The default value means:
 
-* Single style: `<style>style1</style>Text to speak`
-* Multiple styles: `<style>style1 style2</style>Text to speak`
+```
+Bright, bouncy, slightly sing-song tone — like you are bursting with good news you can barely hold in. Fast pace, rising pitch at the end.
+```
 
-For a full list of recommended styles (speed, emotion, role-play, dialect, etc.) and fine-grained audio tag examples, see the [Chinese README](README.md).
+You can edit it from the Natural Language Control text entity on the integration device. See the [official Xiaomi docs](https://platform.xiaomimimo.com/docs/zh-CN/usage-guide/speech-synthesis-v2.5).
 
-### Default style behaviour
+### Audio Tag Control
 
-When a **Default style** is configured, every `tts.say` call automatically prepends `<style>style</style>`.  
-You can override the default by specifying a style directly in `tts.say`.  
-For example, if the default style is set to `温柔女声`:
+Audio Tag Control is prepended to the MiMo v2.5 `assistant` text as an audio tag. The default value is Taiwanese accent. For example, when sending `The weather looks good tomorrow`, the actual `assistant` text is `(Taiwanese accent)The weather looks good tomorrow`.
 
-| Message sent via `tts.say` | Text actually synthesized |
+If the `tts.say` text already starts with an audio tag, such as `(happy)`, `(Cantonese)`, or `[whisper]`, the inline tag is used and the default Audio Tag Control is not added.
+
+| Message sent via `tts.say` | `assistant` text |
 |----|-----|
-| `明天天气不错` | `<style>温柔女声</style>明天天气不错` |
-| `<style>开心</style>明天就是周五了` | `<style>开心</style>明天就是周五了` (inline style wins) |
+| `The weather looks good tomorrow` | `(Taiwanese accent)The weather looks good tomorrow` |
+| `(happy)Tomorrow is Friday. I'm so happy!` | `(happy)Tomorrow is Friday. I'm so happy!` |
+| `(Northeastern accent, faster)Whoa, it is freezing out here!` | `(Northeastern accent, faster)Whoa, it is freezing out here!` |
 
-### Fine-grained control with audio tags
+## Voices
+### Preset Voices
 
-Use inline audio tags in your text for precise control over tone, emotion, and expression — whispers, laughter, sighs, coughs, breathing, pauses, and tempo changes. See the [Chinese README](README.md) for examples.
+The integration selects v2.5 preset voices from the Home Assistant TTS language. Use these language values:
+
+| Voice language | Voice |
+|---|---|
+| Chinese | `冰糖` |
+| Chinese | `茉莉` |
+| Chinese | `苏打` |
+| Chinese | `白桦` |
+| English | `Mia` |
+| English | `Chloe` |
+| English | `Milo` |
+| English | `Dean` |
+
+
+### Custom Voices
+
+TODO: Not implemented yet. Future support for custom voices is planned with `mimo-v2.5-tts-voicedesign`; the current version only supports the v2.5 preset voices listed above.

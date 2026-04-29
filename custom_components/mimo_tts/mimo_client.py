@@ -27,10 +27,6 @@ _LOGGER = logging.getLogger(__name__)
 # Fixed output format per product requirements.
 _AUDIO_FORMAT = "wav"
 
-# MiMo TTS requires both user and assistant roles; speech is synthesized for the assistant turn.
-_USER_PROMPT_READ_ALOUD = "Read the following text aloud."
-
-
 def _extract_base64_audio(payload: dict[str, Any]) -> str:
     """Parse chat.completions response; audio is base64 in message.audio.data."""
     try:
@@ -73,14 +69,20 @@ class MimoTTSClient:
         return {
             "Content-Type": "application/json",
             "User-Agent": "HomeAssistant-MiMo-TTS",
-            "Authorization": f"Bearer {self._api_key}",
+            "api-key": self._api_key,
         }
 
-    def _build_chat_payload(self, text: str, *, voice: str) -> dict[str, Any]:
-        messages: list[dict[str, str]] = [
-            {"role": "user", "content": _USER_PROMPT_READ_ALOUD},
-            {"role": "assistant", "content": text},
-        ]
+    def _build_chat_payload(
+        self,
+        text: str,
+        *,
+        voice: str,
+        instruction: str | None = None,
+    ) -> dict[str, Any]:
+        messages: list[dict[str, str]] = []
+        if instruction:
+            messages.append({"role": "user", "content": instruction})
+        messages.append({"role": "assistant", "content": text})
 
         return {
             "model": DEFAULT_MODEL,
@@ -98,7 +100,7 @@ class MimoTTSClient:
         ),
         401: (
             MimoAuthError,
-            "Authentication failed — check API key and Authorization header",
+            "Authentication failed — check API key",
         ),
         403: (
             MimoForbiddenError,
@@ -142,15 +144,17 @@ class MimoTTSClient:
         text: str,
         *,
         voice: str,
+        instruction: str | None = None,
     ) -> tuple[bytes, str]:
         """Return raw WAV bytes and file extension for Home Assistant TTS cache."""
-        payload = self._build_chat_payload(text, voice=voice)
+        payload = self._build_chat_payload(text, voice=voice, instruction=instruction)
 
         _LOGGER.debug(
-            "MiMo TTS POST %s model=%s voice=%s msg_len=%s",
+            "MiMo TTS POST %s model=%s voice=%s instruction=%s msg_len=%s",
             self._url,
             payload.get("model"),
             (payload.get("audio") or {}).get("voice"),
+            bool(instruction),
             len(text),
         )
 

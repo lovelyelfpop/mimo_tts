@@ -14,7 +14,7 @@ class MimoBadRequestError(MimoAPIError):
 
 
 class MimoAuthError(MimoAPIError):
-    """HTTP 401 — missing or invalid API key / Authorization header."""
+    """HTTP 401 — missing or invalid API key."""
 
 
 class MimoForbiddenError(MimoAPIError):

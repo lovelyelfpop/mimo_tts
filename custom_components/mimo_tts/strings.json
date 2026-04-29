@@ -3,25 +3,23 @@
     "step": {
       "user": {
         "title": "Xiaomi MiMo TTS",
-        "description": "Uses the Xiaomi mimo-v2-tts model. Supports Chinese and English. You may set a default style below. If not set, or if you prepend a style tag to the message in each tts.say call, the per-call style takes precedence.",
+        "description": "Uses the Xiaomi mimo-v2.5-tts model. Natural Language Control and Audio Tag Control are edited from the integration device after setup.",
         "data": {
           "api_key": "API key",
-          "url": "URL (default is fine)",
-          "style": "Default style (optional)"
+          "url": "URL (default is fine)"
         }
       },
       "reconfigure": {
         "title": "Reconfigure Xiaomi MiMo TTS",
-        "description": "Update API key, URL, and default style.",
+        "description": "Update API key and URL. Natural Language Control and Audio Tag Control are edited from the integration device.",
         "data": {
           "api_key": "API key",
-          "url": "URL (default is fine)",
-          "style": "Default style (optional)"
+          "url": "URL (default is fine)"
         }
       }
     },
     "error": {
-      "invalid_auth": "Authentication failed (401) — check API key and Authorization header",
+      "invalid_auth": "Authentication failed (401) — check API key",
       "bad_request": "Bad request (400) — check request format, parameters, and model name",
       "forbidden": "Access denied (403) — region not supported or API key blocked by risk control",
       "content_filtered": "Content blocked (421) — content moderation rejected the input",
@@ -37,6 +35,14 @@
   "entity": {
     "mimo_tts": {
       "name": "Xiaomi MiMo TTS"
+    },
+    "text": {
+      "natural_language_control": {
+        "name": "Natural Language Control"
+      },
+      "audio_tag_control": {
+        "name": "Audio Tag Control"
+      }
     }
   }
 }
