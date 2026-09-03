@@ -18,36 +18,40 @@ DEFAULT_MODEL = "mimo-v2.5-tts"
 # Official chat.completions + audio; WAV only.
 DEFAULT_CHAT_COMPLETIONS_URL = "https://api.xiaomimimo.com/v1/chat/completions"
 
-# MiMo v2.5 built-in voice ids — chosen from HA `language`.
-LANG_ZH_BINGTANG = "冰糖"
-LANG_ZH_MOLI = "茉莉"
-LANG_ZH_SUDA = "苏打"
-LANG_ZH_BAIHUA = "白桦"
-LANG_EN_MIA = "Mia"
-LANG_EN_CHLOE = "Chloe"
-LANG_EN_MILO = "Milo"
-LANG_EN_DEAN = "Dean"
+# Real HA language codes this engine advertises (BCP-47 tags).
+LANG_ZH_CN = "zh-CN"
+LANG_EN_US = "en-US"
 
-SUPPORTED_LANGUAGES = [
-    LANG_ZH_BINGTANG,
-    LANG_ZH_MOLI,
-    LANG_ZH_SUDA,
-    LANG_ZH_BAIHUA,
-    LANG_EN_MIA,
-    LANG_EN_CHLOE,
-    LANG_EN_MILO,
-    LANG_EN_DEAN,
-]
+SUPPORTED_LANGUAGES = [LANG_ZH_CN, LANG_EN_US]
 
-_VOICE_BY_LANGUAGE = {
-    LANG_ZH_BINGTANG: "冰糖",
-    LANG_ZH_MOLI: "茉莉",
-    LANG_ZH_SUDA: "苏打",
-    LANG_ZH_BAIHUA: "白桦",
-    LANG_EN_MIA: "Mia",
-    LANG_EN_CHLOE: "Chloe",
-    LANG_EN_MILO: "Milo",
-    LANG_EN_DEAN: "Dean",
+# MiMo v2.5 built-in voice ids.
+VOICE_ZH_BINGTANG = "冰糖"
+VOICE_ZH_MOLI = "茉莉"
+VOICE_ZH_SUDA = "苏打"
+VOICE_ZH_BAIHUA = "白桦"
+VOICE_EN_MIA = "Mia"
+VOICE_EN_CHLOE = "Chloe"
+VOICE_EN_MILO = "Milo"
+VOICE_EN_DEAN = "Dean"
+
+VOICES_BY_LANGUAGE: dict[str, list[str]] = {
+    LANG_ZH_CN: [
+        VOICE_ZH_BINGTANG,
+        VOICE_ZH_MOLI,
+        VOICE_ZH_SUDA,
+        VOICE_ZH_BAIHUA,
+    ],
+    LANG_EN_US: [
+        VOICE_EN_MIA,
+        VOICE_EN_CHLOE,
+        VOICE_EN_MILO,
+        VOICE_EN_DEAN,
+    ],
+}
+
+DEFAULT_VOICE_BY_LANGUAGE: dict[str, str] = {
+    LANG_ZH_CN: VOICE_ZH_BINGTANG,
+    LANG_EN_US: VOICE_EN_MIA,
 }
 
 
@@ -82,12 +86,35 @@ def apply_audio_tag_control(text: str, audio_tag_control: str | None) -> str:
     return f"({style}){text}"
 
 
-def voice_for_language(language: str | None) -> str:
-    """Map HA TTS language selection to a MiMo v2.5 built-in voice."""
+def _normalize_language(language: str | None) -> str | None:
+    """Return the canonical supported language tag for a HA language code."""
     if language is None:
-        language = SUPPORTED_LANGUAGES[0]
-    normalized = language.strip().replace("_", "-")
-    return _VOICE_BY_LANGUAGE[normalized]
+        return None
+    raw = language.strip().replace("_", "-")
+    for key in VOICES_BY_LANGUAGE:
+        if raw.casefold() == key.casefold():
+            return key
+    base = raw.split("-", 1)[0].casefold()
+    for key in VOICES_BY_LANGUAGE:
+        if key.split("-", 1)[0].casefold() == base:
+            return key
+    return None
+
+
+def voices_for_language(language: str | None) -> list[str] | None:
+    """Return MiMo built-in voice ids available for a language code."""
+    lang = _normalize_language(language)
+    if lang is None:
+        return None
+    return VOICES_BY_LANGUAGE[lang]
+
+
+def voice_for_language(language: str | None) -> str:
+    """Return the default MiMo voice id for a HA language code."""
+    lang = _normalize_language(language)
+    if lang is not None:
+        return DEFAULT_VOICE_BY_LANGUAGE[lang]
+    return DEFAULT_VOICE_BY_LANGUAGE[SUPPORTED_LANGUAGES[0]]
 
 
 # Device registry / device page (HA may show brand logo when manufacturer matches its asset set).

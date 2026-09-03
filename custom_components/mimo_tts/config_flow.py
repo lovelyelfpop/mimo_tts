@@ -20,7 +20,7 @@ from .const import (
     DEFAULT_MODEL,
     DEFAULT_NATURAL_LANGUAGE_CONTROL,
     DOMAIN,
-    LANG_EN_MIA,
+    LANG_EN_US,
     apply_audio_tag_control,
     voice_for_language,
 )
@@ -92,7 +92,7 @@ async def _validate_speech(data: dict[str, Any]) -> None:
             await client.async_synthesize(
                 session,
                 apply_audio_tag_control("Hi", DEFAULT_AUDIO_TAG_CONTROL),
-                voice=voice_for_language(LANG_EN_MIA),
+                voice=voice_for_language(LANG_EN_US),
                 instruction=DEFAULT_NATURAL_LANGUAGE_CONTROL,
             )
     except MimoAuthError as err:
