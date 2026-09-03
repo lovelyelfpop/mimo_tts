@@ -9,9 +9,9 @@ from typing import Any
 
 import aiohttp
 
-from homeassistant.components.tts import TextToSpeechEntity
+from homeassistant.components.tts import ATTR_VOICE, Voice, TextToSpeechEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -32,6 +32,7 @@ from .const import (
     SUPPORTED_LANGUAGES,
     apply_audio_tag_control,
     voice_for_language,
+    voices_for_language,
 )
 from .exceptions import (
     MimoAPIError,
@@ -111,7 +112,15 @@ class MimoTTSEntity(TextToSpeechEntity):
 
     @property
     def supported_options(self) -> list[str]:
-        return [OPTION_NATURAL_LANGUAGE_CONTROL, OPTION_AUDIO_TAG_CONTROL]
+        return [ATTR_VOICE, OPTION_NATURAL_LANGUAGE_CONTROL, OPTION_AUDIO_TAG_CONTROL]
+
+    @callback
+    def async_get_supported_voices(self, language: str) -> list[Voice] | None:
+        """Return the MiMo built-in voices available for a language."""
+        voices = voices_for_language(language)
+        if voices is None:
+            return None
+        return [Voice(voice_id, voice_id) for voice_id in voices]
 
     @property
     def default_options(self) -> dict[str, str]:
@@ -144,12 +153,20 @@ class MimoTTSEntity(TextToSpeechEntity):
         self._attr_name = DEFAULT_MODEL
         self.async_write_ha_state()
 
+    def _get_voice(self, language: str, options: dict[str, Any]) -> str:
+        """Resolve the MiMo voice id from an options `voice` key or language."""
+        voice = str(options.get(ATTR_VOICE) or "").strip()
+        available = voices_for_language(language)
+        if voice and available is not None and voice in available:
+            return voice
+        return voice_for_language(language)
+
     async def async_get_tts_audio(
         self, message: str, language: str, options: dict[str, Any] | None = None
     ) -> tuple[str | None, bytes | None]:
-        """Return WAV audio bytes; voice follows HA language (zh vs en)."""
-        voice = voice_for_language(language)
+        """Return WAV audio bytes; voice chosen from HA language / voice option."""
         options = options or {}
+        voice = self._get_voice(language, options)
         natural_language_control = str(
             options.get(OPTION_NATURAL_LANGUAGE_CONTROL)
             or self._get_natural_language_control()
